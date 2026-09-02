@@ -1,0 +1,718 @@
+/* ============================================================ House Kats
+   Design system: amigavel, arredondado, gameficado.
+   A cor de acento (--ac) e trocada em tempo real pela cor do integrante ativo.
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+
+:root {
+  /* acento: sobrescrito por JS conforme o usuario ativo */
+  --ac: #8b5cf6;
+  --ac-soft: #c4b5fd;
+
+  --bg: #f6f4f9;
+  --bg-2: #ece8f3;
+  --surface: #ffffff;
+  --surface-2: #faf9fc;
+  --line: #e6e1ef;
+  --line-2: #d6cfe4;
+
+  --text: #221c2e;
+  --text-2: #6b6379;
+  --text-3: #9a93a8;
+
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --star: #fbbf24;
+
+  --r-sm: 10px;
+  --r: 16px;
+  --r-lg: 22px;
+  --r-xl: 30px;
+
+  --sh-sm: 0 1px 2px rgba(34, 28, 46, .06);
+  --sh: 0 4px 14px rgba(34, 28, 46, .08);
+  --sh-lg: 0 12px 34px rgba(34, 28, 46, .16);
+
+  --ff: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --ff-display: 'Baloo 2', var(--ff);
+
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15121c;
+    --bg-2: #1d1826;
+    --surface: #221d2e;
+    --surface-2: #2a2338;
+    --line: #332b44;
+    --line-2: #453a5c;
+    --text: #f3effa;
+    --text-2: #b3a9c4;
+    --text-3: #7d7391;
+    --sh-sm: 0 1px 2px rgba(0, 0, 0, .3);
+    --sh: 0 4px 14px rgba(0, 0, 0, .35);
+    --sh-lg: 0 12px 34px rgba(0, 0, 0, .5);
+  }
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  font-family: var(--ff);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+h1, h2, h3, h4 { font-family: var(--ff-display); line-height: 1.15; font-weight: 700; }
+h1 { font-size: 1.7rem; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.05rem; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: none; }
+ul, ol { list-style: none; }
+
+/* ------------------------------------------------------------ barra de rolagem
+   Fina e discreta, na cor do tema. O truque da borda transparente com
+   background-clip deixa o polegar com respiro nas laterais: o trilho tem 10px,
+   mas o que se vê são 4px arredondados. No celular a barra nativa já é
+   flutuante, então isso vale principalmente no computador. */
+/* Firefox só entende o padrão CSS. No Chrome/Safari, declarar scrollbar-width
+   DESLIGA o ::-webkit-scrollbar abaixo, então ele fica isolado aqui. */
+@supports (scrollbar-width: thin) and (not selector(::-webkit-scrollbar)) {
+  html { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-corner { background: transparent; }
+/* fora as setinhas das pontas: são o oposto de minimalista */
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--line-2);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  transition: background-color .2s ease;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--text-3); background-clip: content-box; }
+::-webkit-scrollbar-thumb:active { background-color: var(--ac); background-clip: content-box; }
+
+/* listas internas (sheets, catálogo) ficam ainda mais discretas */
+.sheet__body::-webkit-scrollbar,
+.scroll-y::-webkit-scrollbar { width: 8px; }
+.sheet__body::-webkit-scrollbar-thumb,
+.scroll-y::-webkit-scrollbar-thumb { border-width: 2px; }
+
+/* ------------------------------------------------------------ layout */
+.app {
+  min-height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  position: relative;
+  background: var(--bg);
+}
+
+.page { padding: 18px 16px calc(96px + var(--safe-b)); }
+.page--flush { padding-bottom: calc(24px + var(--safe-b)); }
+
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.stack-lg { display: flex; flex-direction: column; gap: 20px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.grow { flex: 1; min-width: 0; }
+.center { display: flex; align-items: center; justify-content: center; }
+
+/* ------------------------------------------------------------ tipografia */
+.muted { color: var(--text-2); }
+.tiny { font-size: .78rem; }
+.small { font-size: .87rem; }
+.bold { font-weight: 800; }
+.accent { color: var(--ac); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eyebrow {
+  font-size: .72rem; font-weight: 800; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-3);
+}
+
+/* ------------------------------------------------------------ cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  box-shadow: var(--sh-sm);
+}
+.card--tap { transition: transform .12s ease, box-shadow .12s ease; }
+.card--tap:active { transform: scale(.985); box-shadow: var(--sh); }
+.card--accent {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--ac) 16%, var(--surface)), var(--surface) 70%);
+  border-color: color-mix(in srgb, var(--ac) 28%, var(--line));
+}
+.card--flat { box-shadow: none; }
+
+/* ------------------------------------------------------------ botoes */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 18px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  font-weight: 700;
+  font-size: .95rem;
+  transition: transform .1s ease, filter .15s ease, background .15s ease;
+  min-height: 48px;
+}
+.btn:active { transform: scale(.96); }
+.btn:disabled { opacity: .42; pointer-events: none; }
+
+.btn--primary {
+  background: var(--ac);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--ac) 65%, #000);
+}
+.btn--primary:active { box-shadow: 0 1px 0 color-mix(in srgb, var(--ac) 65%, #000); transform: translateY(3px) scale(.99); }
+
+.btn--soft { background: color-mix(in srgb, var(--ac) 14%, var(--surface)); border-color: transparent; color: var(--ac); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--text-2); }
+.btn--danger { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); border-color: transparent; color: var(--danger); }
+.btn--block { width: 100%; }
+.btn--sm { padding: 8px 12px; min-height: 38px; font-size: .85rem; border-radius: var(--r-sm); }
+.btn--lg { padding: 16px 22px; min-height: 56px; font-size: 1.05rem; border-radius: var(--r-lg); }
+
+/* ------------------------------------------------------------ chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: .84rem; font-weight: 700;
+  transition: transform .1s ease;
+}
+.chip:active { transform: scale(.94); }
+.chip--on { background: var(--ac); border-color: transparent; color: #fff; }
+.chip--soft { background: color-mix(in srgb, var(--ac) 13%, var(--surface)); border-color: transparent; color: var(--ac); }
+
+/* ------------------------------------------------------------ formularios */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.label { font-size: .82rem; font-weight: 800; color: var(--text-2); }
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: var(--r);
+  border: 1.5px solid var(--line-2);
+  background: var(--surface-2);
+  outline: none;
+  transition: border-color .15s ease, background .15s ease;
+  min-height: 48px;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--ac);
+  background: var(--surface);
+}
+.input::placeholder { color: var(--text-3); }
+.textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
+.select { appearance: none; background-image: none; }
+
+.input--big {
+  font-family: var(--ff-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 16px;
+}
+
+/* seletor em grade (emoji, cor, avatar) */
+.grid-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 8px; }
+.pick {
+  aspect-ratio: 1;
+  display: grid; place-items: center;
+  font-size: 1.5rem;
+  border-radius: var(--r);
+  background: var(--surface-2);
+  border: 2px solid transparent;
+  transition: transform .1s ease;
+}
+.pick:active { transform: scale(.9); }
+.pick--on { border-color: var(--ac); background: color-mix(in srgb, var(--ac) 15%, var(--surface)); }
+
+.swatch { aspect-ratio: 1; border-radius: 50%; border: 3px solid transparent; transition: transform .1s ease; }
+.swatch--on { border-color: var(--text); transform: scale(1.08); }
+
+/* opcoes em lista (dieta, objetivo, motivo) */
+.opt {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; text-align: left;
+  padding: 14px;
+  border-radius: var(--r);
+  background: var(--surface-2);
+  border: 2px solid transparent;
+  transition: transform .1s ease;
+}
+.opt:active { transform: scale(.98); }
+.opt--on { border-color: var(--ac); background: color-mix(in srgb, var(--ac) 12%, var(--surface)); }
+.opt__emoji { font-size: 1.6rem; line-height: 1; }
+.opt__title { font-weight: 800; }
+
+/* ------------------------------------------------------------ avatar */
+.avatar {
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 2.5px solid var(--am, var(--ac));
+  flex: none;
+}
+.avatar--sm { width: 34px; height: 34px; font-size: 1.05rem; border-width: 2px; }
+.avatar--md { width: 48px; height: 48px; font-size: 1.5rem; }
+.avatar--lg { width: 78px; height: 78px; font-size: 2.5rem; border-width: 3px; }
+.avatar--xl { width: 104px; height: 104px; font-size: 3.4rem; border-width: 4px; }
+
+/* ------------------------------------------------------------ progresso */
+.bar { height: 9px; border-radius: 999px; background: var(--bg-2); overflow: hidden; }
+.bar__fill { height: 100%; border-radius: 999px; background: var(--ac); transition: width .5s cubic-bezier(.22,1,.36,1); }
+
+.steps { display: flex; gap: 5px; }
+.steps__dot { height: 5px; flex: 1; border-radius: 999px; background: var(--line-2); transition: background .3s ease; }
+.steps__dot--on { background: var(--ac); }
+
+/* ------------------------------------------------------------ modal / sheet */
+.backdrop {
+  position: fixed; inset: 0;
+  background: rgba(20, 14, 30, .55);
+  backdrop-filter: blur(3px);
+  z-index: 60;
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fade .18s ease;
+}
+.sheet {
+  width: 100%; max-width: 560px;
+  max-height: 92vh;
+  background: var(--bg);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--sh-lg);
+  display: flex; flex-direction: column;
+  animation: slide-up .26s cubic-bezier(.22,1,.36,1);
+  overflow: hidden;
+}
+.sheet__grip { width: 42px; height: 4px; border-radius: 999px; background: var(--line-2); margin: 10px auto 4px; flex: none; }
+.sheet__head { padding: 6px 18px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; }
+.sheet__body { padding: 4px 18px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.sheet__foot {
+  padding: 12px 18px calc(14px + var(--safe-b));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  display: flex; gap: 10px; flex: none;
+}
+
+@keyframes fade { from { opacity: 0; } }
+@keyframes slide-up { from { transform: translateY(24px); opacity: .5; } }
+@keyframes pop { 0% { transform: scale(.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.pop { animation: pop .22s cubic-bezier(.22,1.4,.4,1); }
+
+/* ------------------------------------------------------------ tabbar */
+.tabbar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 560px;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+  padding: 7px 6px calc(7px + var(--safe-b));
+  z-index: 40;
+}
+.tab {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 5px 2px;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: .68rem; font-weight: 800;
+  transition: color .15s ease;
+}
+.tab__ico { font-size: 1.35rem; line-height: 1; transition: transform .18s cubic-bezier(.22,1.4,.4,1); }
+.tab--on { color: var(--ac); }
+.tab--on .tab__ico { transform: translateY(-2px) scale(1.14); }
+
+/* ------------------------------------------------------------ topo */
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+}
+.topbar--edge { border-bottom-color: var(--line); }
+
+/* ------------------------------------------------------------ diversos */
+.divider { height: 1px; background: var(--line); margin: 4px 0; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: .72rem; font-weight: 800;
+  background: color-mix(in srgb, var(--ac) 15%, transparent); color: var(--ac);
+}
+.badge--warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.badge--danger { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+.badge--ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+
+.empty { text-align: center; padding: 34px 20px; color: var(--text-2); }
+.empty__emoji { font-size: 3rem; display: block; margin-bottom: 10px; opacity: .85; }
+
+.toast-wrap {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(84px + var(--safe-b)); z-index: 80;
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+  width: min(92%, 460px); pointer-events: none;
+}
+.toast {
+  background: var(--text); color: var(--bg);
+  padding: 11px 16px; border-radius: 999px;
+  font-weight: 700; font-size: .88rem;
+  box-shadow: var(--sh-lg);
+  animation: pop .2s cubic-bezier(.22,1.4,.4,1);
+}
+
+.spinner {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 3px solid var(--line-2); border-top-color: var(--ac);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ------------------------------------------------------------ escolher usuario */
+.grid-people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.person {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  padding: 20px 12px;
+  border-radius: var(--r-lg);
+}
+.person > * { max-width: 100%; }
+.person--add { border-style: dashed; background: transparent; box-shadow: none; }
+
+/* ------------------------------------------------------------ highlights */
+.hl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.hl {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 13px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.hl__ico { font-size: 1.35rem; line-height: 1; }
+.hl__val { font-family: var(--ff-display); font-size: 1.45rem; font-weight: 800; line-height: 1.1; }
+.hl__lbl { font-size: .74rem; color: var(--text-2); font-weight: 700; }
+.hl--wide { grid-column: 1 / -1; }
+
+/* ------------------------------------------------------------ tinder de receitas */
+.swipe-card { animation: card-in .26s cubic-bezier(.22,1,.36,1); }
+.swipe-card--like { animation: card-like .22s ease forwards; }
+.swipe-card--nope { animation: card-nope .22s ease forwards; }
+
+@keyframes card-in { from { transform: scale(.94) translateY(10px); opacity: 0; } }
+@keyframes card-like { to { transform: translateX(110%) rotate(9deg); opacity: 0; } }
+@keyframes card-nope { to { transform: translateX(-110%) rotate(-9deg); opacity: 0; } }
+
+.chip.tiny { font-size: .74rem; padding: 5px 9px; }
+
+/* ------------------------------------------------------------ estrelas */
+.stars { display: inline-flex; gap: 2px; }
+.star { font-size: 1.15rem; line-height: 1; filter: grayscale(1); opacity: .35; transition: all .12s ease; }
+.star--on { filter: none; opacity: 1; }
+.star--tap:active { transform: scale(1.25); }
+
+/* ------------------------------------------------------------ lista de compras */
+.shop-item { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.shop-item:last-child { border-bottom: none; }
+.shop-item--done .shop-item__name { text-decoration: line-through; opacity: .45; }
+.check {
+  width: 26px; height: 26px; border-radius: 8px; flex: none;
+  border: 2px solid var(--line-2); display: grid; place-items: center;
+  font-size: .8rem; color: #fff; transition: all .15s ease;
+}
+.check--on { background: var(--ac); border-color: var(--ac); }
+
+/* ------------------------------------------------------------ calendário */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-grid--head { margin-bottom: 4px; }
+.cal-wd { text-align: center; font-size: .68rem; font-weight: 800; color: var(--text-3); }
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1.5px solid transparent;
+  transition: transform .1s ease, border-color .15s ease;
+}
+.cal-day:active { transform: scale(.92); }
+.cal-day__n { font-size: .78rem; font-weight: 700; color: var(--text-2); }
+.cal-day--on { background: color-mix(in srgb, var(--ac) 14%, var(--surface)); }
+.cal-day--on .cal-day__n { color: var(--text); font-weight: 800; }
+.cal-day--today { border-color: var(--ac); }
+.cal-day--sel { border-color: var(--text); }
+
+.cal-day__dots { display: flex; gap: 2px; height: 5px; }
+.cal-day__dots i { width: 5px; height: 5px; border-radius: 50%; display: block; }
+
+/* ------------------------------------------------------------ gráfico de barras */
+.chart { display: flex; align-items: flex-end; gap: 6px; height: 132px; padding-top: 16px; }
+.chart__col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; gap: 4px; }
+.chart__bar {
+  width: 100%; max-width: 34px;
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(180deg, var(--ac), color-mix(in srgb, var(--ac) 55%, transparent));
+  transition: height .5s cubic-bezier(.22,1,.36,1);
+}
+.chart__val { font-size: .64rem; font-weight: 800; color: var(--text-2); }
+.chart__lbl { font-size: .64rem; color: var(--text-3); font-weight: 700; }
+
+/* ------------------------------------------------------------ demo */
+.demo-card { text-align: left; border-style: dashed; }
+
+/* lista com rolagem própria: não deixa o gesto vazar para a página atrás */
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* ------------------------------------------------------------ copo de água */
+.copo {
+  position: relative;
+  width: 108px;
+  height: 140px;
+  margin: 4px auto 0;
+  /* levemente afunilado embaixo, como um copo de verdade */
+  clip-path: polygon(4% 0, 96% 0, 86% 100%, 14% 100%);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  box-shadow: inset 0 0 0 2px var(--line-2);
+  overflow: hidden;
+}
+.copo__agua {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ac) 62%, transparent), var(--ac));
+  transition: height .7s cubic-bezier(.22,1,.36,1);
+}
+/* linha de superfície, para o nível ficar óbvio */
+.copo__agua::before {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 0;
+  height: 3px;
+  background: color-mix(in srgb, #fff 55%, var(--ac));
+}
+/* ------------------------------------------------------------ a praça
+   Vista aérea, olhando de cima para baixo: o gramado é plano, sem horizonte,
+   e o calçadão no meio é um círculo de verdade, não uma elipse em perspectiva. */
+.praca {
+  position: relative;
+  height: 320px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 22% 24%, color-mix(in srgb, #ffffff 8%, transparent), transparent 42%),
+    radial-gradient(circle at 78% 74%, color-mix(in srgb, #000000 10%, transparent), transparent 46%),
+    color-mix(in srgb, var(--praca-chao, #4f9d7a) 40%, var(--surface));
+}
+
+/* o calçadão redondo do meio da praça, visto de cima */
+.praca::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 52%;
+  width: 190px; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--praca-piso, #c9a227) 16%, transparent);
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--praca-piso, #c9a227) 8%, transparent);
+}
+
+.praca__item {
+  position: absolute;
+  font-size: 1.8rem;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.25));
+}
+
+.praca__bicho {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  transition: left .28s linear, top .28s linear;
+  display: flex; flex-direction: column; align-items: center;
+  z-index: 2;
+}
+.praca__emoji {
+  font-size: 2rem;
+  animation: bichinho-anda 1.1s ease-in-out infinite;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.3));
+}
+.praca__bicho--triste .praca__emoji { animation-duration: 2.2s; opacity: .8; }
+
+.praca__nome {
+  font-size: .6rem; font-weight: 800;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  padding: 1px 6px; border-radius: 999px;
+  margin-top: -3px;
+  white-space: nowrap;
+}
+
+.praca__balao {
+  position: absolute; bottom: 100%;
+  left: 50%; transform: translateX(-50%);
+  margin-bottom: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 4px 8px;
+  font-size: .66rem; font-weight: 700;
+  /* o bicho é estreito, então o balão precisa crescer sozinho até o limite */
+  width: max-content;
+  max-width: 180px;
+  text-align: center;
+  line-height: 1.25;
+  box-shadow: var(--sh);
+  animation: pop .2s cubic-bezier(.22,1.4,.4,1);
+}
+
+.praca__treat {
+  position: absolute; left: 50%; top: -10%;
+  font-size: 2rem;
+  animation: petisco-cai 1s cubic-bezier(.5,0,.9,.6) forwards;
+  z-index: 3;
+}
+
+.praca__vazia { position: absolute; inset: 0; display: grid; place-items: center; }
+
+@keyframes bichinho-anda {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%      { transform: translateY(-4px) rotate(3deg); }
+}
+@keyframes petisco-cai {
+  0%   { top: -10%; transform: translateX(-50%) rotate(0); }
+  100% { top: 62%;  transform: translateX(-50%) rotate(340deg); }
+}
+
+/* ------------------------------------------------------------ barra dividida */
+.split {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.split__part { transition: width .4s ease; }
+.split__dot {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 999px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.chart__bar--alt { background: linear-gradient(180deg, var(--warn), color-mix(in srgb, var(--warn) 60%, #000)); }
+
+/* ------------------------------------------------------------ fundos da loja
+   Cada amostra reproduz o mapa em miniatura: o gramado e o calçadão redondo,
+   com as mesmas variáveis, então o que você vê é o que a praça vira. */
+.fundos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.fundo {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 6px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  transition: transform .1s ease, border-color .15s ease;
+}
+.fundo:active { transform: scale(.96); }
+.fundo:disabled { opacity: .42; pointer-events: none; }
+.fundo--on { border-color: var(--ac); background: color-mix(in srgb, var(--ac) 10%, var(--surface)); }
+
+.fundo__amostra {
+  width: 100%; height: 46px;
+  border-radius: var(--r-sm);
+  background:
+    radial-gradient(circle at 22% 24%, color-mix(in srgb, #ffffff 8%, transparent), transparent 42%),
+    radial-gradient(circle at 78% 74%, color-mix(in srgb, #000000 10%, transparent), transparent 46%),
+    color-mix(in srgb, var(--praca-chao) 40%, var(--surface));
+  display: grid;
+  place-items: center;
+}
+/* o calçadão da miniatura */
+.fundo__amostra::after {
+  content: '';
+  width: 28px; aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--praca-piso) 16%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--praca-piso) 8%, transparent);
+}
+
+.fundo__nome { font-size: .68rem; font-weight: 800; text-align: center; line-height: 1.2; }
+
+/* ------------------------------------------------------------ o que dá para cozinhar
+   Três números lado a lado, dentro do card de refeições. Toca e vai para o
+   livro de receitas. */
+.cozinhaveis {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 0;
+  width: 100%;
+  text-align: left;
+}
+.cozinhaveis:active { transform: scale(.98); }
+
+.cozinhavel {
+  flex: 1;
+  min-width: 0;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 8px 6px 7px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--ac) 12%, var(--surface));
+}
+.cozinhavel--off { opacity: .45; }
+
+.cozinhavel__n {
+  font-family: var(--ff-display);
+  font-size: 1.35rem; font-weight: 800; line-height: 1;
+  color: var(--ac);
+}
+.cozinhavel__lbl {
+  font-size: .62rem; font-weight: 800;
+  color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------ calendário: repetições
+   O ponto cheio é tarefa feita; o vazado é especial que ainda vai voltar. */
+.cal-dot--volta {
+  background: transparent !important;
+  border: 1.5px solid var(--warn);
+}
+.cal-day--volta:not(.cal-day--on) { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }

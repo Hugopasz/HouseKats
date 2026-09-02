@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.DS_Store
+
+# O banco mora fora do projeto (veja "Onde ficam os dados" no README).
+# Estas linhas cobrem instalações antigas e a cópia de segurança da mudança.
+data/
+data.backup-onedrive/

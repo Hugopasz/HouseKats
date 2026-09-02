@@ -1,0 +1,27 @@
+{
+  "name": "house-kats",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "House Kats - Gerenciador de Tarefinhas Adultas",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c magenta,cyan \"node --no-warnings=ExperimentalWarning server/index.js\" \"vite --host\"",
+    "build": "vite build",
+    "start": "vite build && cross-env NODE_ENV=production node --no-warnings=ExperimentalWarning server/index.js",
+    "server": "node --no-warnings=ExperimentalWarning server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11"
+  }
+}
