@@ -355,6 +355,17 @@ ensureColumn('chore', 'next_at', 'next_at TEXT');
 // conferência mostrar o prato em vez de listar ingrediente por ingrediente
 ensureColumn('consumption_claim', 'cook_id', 'cook_id INTEGER REFERENCES cook_log(id) ON DELETE SET NULL');
 
+// Crachá de aparelho que já acertou a senha da casa. Fica no banco para
+// reiniciar o servidor não expulsar ninguém.
+db.exec(`
+CREATE TABLE IF NOT EXISTS sessao (
+  token      TEXT PRIMARY KEY,
+  apelido    TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL
+);
+`);
+
 db.exec(`
 -- Cada gole registrado. water_ml é quanto daquilo hidrata de verdade;
 -- debt_ml é a água EXTRA que a bebida adiciona à meta (café, álcool, doce).

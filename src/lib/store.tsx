@@ -3,7 +3,7 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  ApiError, getHouse, getMeta, getState, ping,
+  ApiError, getHouse, getMeta, getState, ping, quandoTrancar,
   type House, type HouseSummary, type Member, type Meta,
 } from './api';
 
@@ -29,6 +29,9 @@ type Toast = { id: number; text: string };
 
 type Ctx = {
   ready: boolean;
+  /** true = o aparelho não tem crachá: a tela da senha assume. */
+  trancado: boolean;
+  destrancar: () => void;
   /** Preenchido quando o servidor não responde ou não é o do House Kats. */
   bootError: { message: string; wrongServer: boolean } | null;
   meta: Meta | null;
@@ -51,6 +54,7 @@ const AppCtx = createContext<Ctx | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [bootError, setBootError] = useState<Ctx['bootError']>(null);
+  const [trancado, setTrancado] = useState(false);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [houses, setHouses] = useState<HouseSummary[]>([]);
   const [draft, setDraft] = useState<HouseSummary | null>(null);
@@ -103,6 +107,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [loadHouse]
   );
 
+  // qualquer 401 no meio do uso devolve a pessoa para a tela da senha
+  useEffect(() => { quandoTrancar(() => setTrancado(true)); }, []);
+
   useEffect(() => {
     (async () => {
       try {
@@ -117,6 +124,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await refresh();
       } catch (e) {
         const err = e instanceof ApiError ? e : null;
+        // 401 não é servidor quebrado, é porta trancada
+        if (err?.status === 401) { setTrancado(true); return; }
         setBootError({
           message: err?.message ?? 'Não deu para falar com o servidor.',
           wrongServer: err?.wrongServer ?? false,
@@ -149,7 +158,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [loadHouse, setMe]
   );
 
-  const value: Ctx = { ready, bootError, meta, houses, draft, house, me, refresh, openHouse, setMe, toast, toasts };
+  const destrancar = useCallback(() => { setTrancado(false); window.location.reload(); }, []);
+
+  const value: Ctx = {
+    ready, bootError, trancado, destrancar,
+    meta, houses, draft, house, me, refresh, openHouse, setMe, toast, toasts,
+  };
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
 

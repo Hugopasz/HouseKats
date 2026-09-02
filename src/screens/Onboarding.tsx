@@ -6,7 +6,7 @@ import {
 } from '../lib/api';
 import { useApp } from '../lib/store';
 import { bumpQty, fmtQty } from '../lib/units';
-import { Avatar, Confirm, Field, Steps } from '../components/ui';
+import { Avatar, Confirm, Field, SenhaField, Steps } from '../components/ui';
 import MemberForm from '../components/MemberForm';
 import DemoSheet from '../components/DemoSheet';
 import AddItemSheet from '../components/AddItemSheet';
@@ -97,11 +97,12 @@ function CreateHouse() {
   const [emoji, setEmoji] = useState('🏠');
   const [busy, setBusy] = useState(false);
   const [demo, setDemo] = useState(false);
+  const [senha, setSenha] = useState('');
 
   const create = async () => {
     setBusy(true);
     try {
-      const h = await createHouse(name.trim(), emoji);
+      const h = await createHouse(name.trim(), emoji, senha);
       await refresh(h.id);
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Não deu para criar a casa');
@@ -137,7 +138,7 @@ function CreateHouse() {
             placeholder="Casa dos Gatos"
             maxLength={28}
             autoFocus
-            onKeyDown={(e) => e.key === 'Enter' && name.trim() && create()}
+            onKeyDown={(e) => e.key === 'Enter' && name.trim() && senha && create()}
           />
         </Field>
 
@@ -151,7 +152,13 @@ function CreateHouse() {
           </div>
         </Field>
 
-        <button className="btn btn--primary btn--lg btn--block" disabled={!name.trim() || busy} onClick={create}>
+        <SenhaField
+          value={senha}
+          onChange={setSenha}
+          hint="Criar e apagar casa pedem a senha. O resto do app não pede nada."
+        />
+
+        <button className="btn btn--primary btn--lg btn--block" disabled={!name.trim() || !senha || busy} onClick={create}>
           {busy ? 'Criando…' : 'Criar casa'}
         </button>
       </div>

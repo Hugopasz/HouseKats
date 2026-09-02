@@ -117,9 +117,14 @@ const WRONG_SERVER =
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
+    const headers: Record<string, string> = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    const token = lerToken();
+    if (token) headers['x-casa-token'] = token;
+
     res = await fetch(`/api${path}`, {
       method,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
@@ -139,15 +144,49 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     }
   }
 
+  // porteiro recusou: o crachá venceu ou a senha mudou
+  if (res.status === 401 && path !== '/entrar') {
+    esquecerToken();
+    aoTrancar?.();
+  }
+
   if (!res.ok) throw new ApiError(data?.error ?? `Erro ${res.status}`, res.status);
   return data as T;
 }
+
+// ---------------------------------------------------------------- tranca
+/**
+ * Crachá do aparelho. Depois de acertar a senha da casa uma vez, ele fica
+ * guardado aqui e vai junto em toda requisição, para ninguém digitar senha a
+ * cada tela. Some quando o servidor recusa (senha trocada, sessão revogada).
+ */
+const CHAVE_TOKEN = 'hk.token';
+
+export const lerToken = () => {
+  try { return localStorage.getItem(CHAVE_TOKEN) ?? ''; } catch { return ''; }
+};
+export const guardarToken = (t: string) => {
+  try { localStorage.setItem(CHAVE_TOKEN, t); } catch { /* modo anônimo */ }
+};
+export const esquecerToken = () => {
+  try { localStorage.removeItem(CHAVE_TOKEN); } catch { /* modo anônimo */ }
+};
+
+/** Avisa o app inteiro que a casa trancou, para a tela da senha aparecer. */
+let aoTrancar: (() => void) | null = null;
+export const quandoTrancar = (fn: () => void) => { aoTrancar = fn; };
+
+export const entrarNaCasa = async (senha: string) => {
+  const r = await request<{ ok: true; token: string }>('POST', '/entrar', { senha });
+  guardarToken(r.token);
+  return r;
+};
 
 export const api = {
   get: <T,>(path: string) => request<T>('GET', path),
   post: <T,>(path: string, body?: unknown) => request<T>('POST', path, body ?? {}),
   patch: <T,>(path: string, body?: unknown) => request<T>('PATCH', path, body ?? {}),
-  del: <T,>(path: string) => request<T>('DELETE', path),
+  del: <T,>(path: string, body?: unknown) => request<T>('DELETE', path, body),
 };
 
 // ---------------------------------------------------------------- endpoints
@@ -159,9 +198,10 @@ export const getState = () =>
 /** Joga fora a casa que ficou pela metade. */
 export const discardDraft = () => api.del<{ ok: true; discarded: number }>('/draft');
 export const getHouse = (id: number) => api.get<House>(`/houses/${id}`);
-export const createHouse = (name: string, emoji: string) => api.post<House>('/houses', { name, emoji });
+export const createHouse = (name: string, emoji: string, senha: string) =>
+  api.post<House>('/houses', { name, emoji, senha });
 export const patchHouse = (id: number, body: Record<string, unknown>) => api.patch<House>(`/houses/${id}`, body);
-export const deleteHouse = (id: number) => api.del<{ ok: true }>(`/houses/${id}`);
+export const deleteHouse = (id: number, senha: string) => api.del<{ ok: true }>(`/houses/${id}`, { senha });
 
 export const addMember = (houseId: number, body: Record<string, unknown>) =>
   api.post<Member>(`/houses/${houseId}/members`, body);
@@ -687,10 +727,10 @@ export type DemoProfile = {
 
 export const getDemoProfiles = () => api.get<DemoProfile[]>('/demo/profiles');
 
-export const createDemo = (profile: string) =>
-  api.post<{ houseId: number; profile: string; members: number }>('/demo', { profile });
+export const createDemo = (profile: string, senha: string) =>
+  api.post<{ houseId: number; profile: string; members: number }>('/demo', { profile, senha });
 
-export const clearDemos = () => api.del<{ ok: true; removed: number }>('/demo');
+export const clearDemos = (senha: string) => api.del<{ ok: true; removed: number }>('/demo', { senha });
 
 // ---------------------------------------------------------------- sobras e congelador
 export const getLeftovers = (houseId: number) =>

@@ -3,12 +3,14 @@ import { Loading, Toasts } from './components/ui';
 import Onboarding from './screens/Onboarding';
 import PickUser from './screens/PickUser';
 import Main from './screens/Main';
+import Tranca from './screens/Tranca';
 
 export default function App() {
-  const { ready, bootError, house, me } = useApp();
+  const { ready, bootError, trancado, destrancar, house, me } = useApp();
 
   let screen;
   if (!ready) screen = <Loading label="Abrindo a casa…" />;
+  else if (trancado) screen = <Tranca onEntrou={destrancar} />;
   else if (bootError) screen = <BootError />;
   else if (!house) screen = <Onboarding />;
   else if (house.onboarding_step !== 'done') screen = <Onboarding />;

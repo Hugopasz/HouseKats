@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { all, get, run, logEvent, tx } from '../db.js';
 import { COLORS, randomTitle } from '../lib/fun.js';
 import { targetsFor, DIETS, GOALS } from '../lib/nutrition.js';
+import { senhaBarrou } from '../lib/senha.js';
 
 const r = Router();
 
@@ -49,6 +50,7 @@ r.get('/state', (_req, res) => {
 
 // ---------------------------------------------------------------- casas
 r.post('/houses', (req, res) => {
+  if (senhaBarrou(req, res)) return;
   const name = str(req.body?.name);
   if (!name) return bad(res, 'A casa precisa de um nome');
   const emoji = str(req.body?.emoji, '🏠');
@@ -106,6 +108,7 @@ r.patch('/houses/:id', (req, res) => {
 });
 
 r.delete('/houses/:id', (req, res) => {
+  if (senhaBarrou(req, res)) return;
   const id = Number(req.params.id);
   const house = get('SELECT * FROM house WHERE id = ?', id);
   if (!house) return res.status(404).json({ error: 'Casa não encontrada' });

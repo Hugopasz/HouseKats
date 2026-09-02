@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { pruneDrafts } from './db.js';
+import { criarSessao, porteiro, senhaConfere, senhaArquivo, senhaOrigem, senhaParaMostrar } from './lib/senha.js';
 import { seedRecipes } from './seed/recipes.js';
 import metaRoutes from './routes/meta.js';
 import houseRoutes from './routes/house.js';
@@ -34,6 +35,20 @@ app.use('/api', (req, _res, next) => {
   if (req.method !== 'GET') console.log(`  ${req.method} ${req.originalUrl}`);
   next();
 });
+
+
+// ---------------------------------------------------------------- tranca
+// Todo o /api passa pelo porteiro. Só /ping e /entrar respondem sem crachá.
+app.post('/api/entrar', (req, res) => {
+  if (!senhaConfere(req.body?.senha)) {
+    return res.status(401).json({
+      error: String(req.body?.senha ?? '').trim() ? 'Senha incorreta' : 'Digite a senha da casa',
+    });
+  }
+  res.json({ ok: true, token: criarSessao(req.get('user-agent') ?? '') });
+});
+
+app.use('/api', porteiro);
 
 app.use('/api', metaRoutes);
 app.use('/api', houseRoutes);
@@ -78,7 +93,16 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   for (const ip of localIPs()) console.log(`  ├─ na Wi-Fi  http://${ip}:${PORT}`);
   if (descartados) console.log(`  ├─ limpeza   ${descartados} casa(s) abandonada(s) no cadastro`);
   console.log(`  ├─ receitas  ${seeded.total} no catálogo${seeded.added ? ` (+${seeded.added} novas)` : ''}`);
+  console.log(`  ├─ senha     ${senhaOrigem === 'HOUSEKATS_SENHA' ? 'da variável de ambiente' : senhaArquivo}`);
   console.log(`  └─ ${served ? 'servindo o app buildado' : 'só API (rode "npm run dev" para o front)'}`);
+
+  // a senha sorteada só aparece uma vez: é a única chance de anotar
+  const nova = senhaParaMostrar();
+  if (nova) {
+    console.log('');
+    console.log(`  🔑 Primeira vez aqui. A senha da casa é:  ${nova}`);
+    console.log(`     Anote. Ela ficou salva em ${senhaArquivo}`);
+  }
   console.log('');
 });
 

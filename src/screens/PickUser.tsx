@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { deleteHouse, deleteMember, type Member } from '../lib/api';
 import { useApp } from '../lib/store';
-import { Avatar, Confirm, Sheet } from '../components/ui';
+import { Avatar, Confirm, SenhaField, Sheet } from '../components/ui';
 import MemberForm from '../components/MemberForm';
 import DemoSheet from '../components/DemoSheet';
 
@@ -150,6 +150,7 @@ export default function PickUser() {
 function DangerZone({ onDone }: { onDone: () => void }) {
   const { house, refresh, openHouse, toast } = useApp();
   const [confirmText, setConfirmText] = useState('');
+  const [senha, setSenha] = useState('');
   const [open, setOpen] = useState(false);
   const [demo, setDemo] = useState(false);
 
@@ -191,11 +192,19 @@ function DangerZone({ onDone }: { onDone: () => void }) {
             onChange={(e) => setConfirmText(e.target.value)}
             placeholder={house.name}
           />
+
+          <SenhaField value={senha} onChange={setSenha} hint="Apagar a casa pede a senha." />
+
           <button
             className="btn btn--danger btn--block"
-            disabled={!matches}
+            disabled={!matches || !senha}
             onClick={async () => {
-              await deleteHouse(house.id);
+              try {
+                await deleteHouse(house.id, senha);
+              } catch (e) {
+                toast(e instanceof Error ? e.message : 'Não deu para apagar');
+                return;
+              }
               setOpen(false);
               onDone();
               await refresh();

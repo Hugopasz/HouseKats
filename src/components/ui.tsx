@@ -219,3 +219,32 @@ export function Toasts() {
     </div>
   );
 }
+
+// ---------------------------------------------------------------- SenhaField
+/**
+ * Campo da senha da casa. Aparece só onde a ação não tem volta: criar e apagar
+ * casa. É um trinco contra o acidente e contra quem não mora aqui, não um
+ * sistema de login.
+ */
+export function SenhaField({
+  value, onChange, hint,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+}) {
+  return (
+    <Field label="Senha da casa" hint={hint ?? 'Quem mora aqui sabe qual é.'}>
+      <input
+        className="input"
+        type="password"
+        inputMode="numeric"
+        autoComplete="off"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="••••••"
+        maxLength={40}
+      />
+    </Field>
+  );
+}

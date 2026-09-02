@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { clearDemos, createDemo, getDemoProfiles, type DemoProfile } from '../lib/api';
 import { useApp } from '../lib/store';
-import { Sheet } from './ui';
+import { SenhaField, Sheet } from './ui';
 
 /**
  * Modo demonstração: cria uma casa de exemplo já preenchida, em três níveis de
@@ -11,6 +11,7 @@ export default function DemoSheet({ open, onClose }: { open: boolean; onClose: (
   const { refresh, toast } = useApp();
   const [profiles, setProfiles] = useState<DemoProfile[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [senha, setSenha] = useState('');
 
   useEffect(() => {
     if (open) getDemoProfiles().then(setProfiles).catch(() => {});
@@ -19,7 +20,7 @@ export default function DemoSheet({ open, onClose }: { open: boolean; onClose: (
   const create = async (p: DemoProfile) => {
     setBusy(p.key);
     try {
-      const out = await createDemo(p.key);
+      const out = await createDemo(p.key, senha);
       await refresh(out.houseId);
       toast(`Casa de exemplo criada com ${out.members} ${out.members === 1 ? 'pessoa' : 'pessoas'}`);
       onClose();
@@ -50,7 +51,7 @@ export default function DemoSheet({ open, onClose }: { open: boolean; onClose: (
               key={p.key}
               className="card card--tap demo-card stack"
               style={{ gap: 6 }}
-              disabled={!!busy}
+              disabled={!senha || !!busy}
               onClick={() => create(p)}
             >
               <div className="row">
@@ -70,11 +71,19 @@ export default function DemoSheet({ open, onClose }: { open: boolean; onClose: (
           ))}
         </div>
 
+        <SenhaField value={senha} onChange={setSenha} hint="Criar ou apagar casa de exemplo pede a senha." />
+
         <button
           className="btn btn--danger btn--block"
-          disabled={!!busy}
+          disabled={!!busy || !senha}
           onClick={async () => {
-            const res = await clearDemos();
+            let res;
+            try {
+              res = await clearDemos(senha);
+            } catch (e) {
+              toast(e instanceof Error ? e.message : 'Não deu para apagar');
+              return;
+            }
             await refresh();
             toast(res.removed ? `${res.removed} casa(s) de exemplo apagada(s)` : 'Nenhuma casa de exemplo');
             onClose();

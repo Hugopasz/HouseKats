@@ -58,6 +58,39 @@ em `http://localhost:5173`).
 
 ---
 
+## Senha da casa
+
+O app não tem conta nem login por pessoa: dentro de casa, você entra tocando no seu
+bichinho. Mas a casa inteira fica atrás de **uma senha só**, digitada **uma vez por
+aparelho**. Sem ela, nenhuma tela abre e nenhuma rota da API responde.
+
+Depois de acertar, o aparelho guarda um crachá que vale seis meses. Ele fica no banco,
+então reiniciar o servidor não expulsa ninguém.
+
+Criar e apagar casa pedem a senha **de novo**, na hora. Entrar no app é uma coisa;
+apagar tudo é outra, e merece confirmação mesmo com o celular já destrancado.
+
+### De onde vem a senha
+
+Nesta ordem:
+
+1. A variável **`HOUSEKATS_SENHA`**, que é o jeito certo em hospedagem.
+2. O arquivo **`senha.txt`**, ao lado do banco (fora da pasta do projeto).
+3. Nenhum dos dois? Na primeira vez o app **sorteia uma senha de seis dígitos**, salva
+   no arquivo e mostra no terminal. Anote, porque ela só aparece uma vez.
+
+```bash
+set HOUSEKATS_SENHA=algumaCoisaSoSua && npm start
+```
+
+> **A senha nunca fica no repositório.** Nem no código, nem em arquivo versionado —
+> ela mora junto do banco, na máquina que roda o app. Trocar é editar o `senha.txt`
+> (ou definir a variável) e subir o servidor de novo.
+
+Para expulsar todos os aparelhos de uma vez, apague as linhas da tabela `sessao`.
+
+---
+
 ## Onde ficam os dados
 
 Tudo num único arquivo SQLite, guardado **fora da pasta do projeto**, em
