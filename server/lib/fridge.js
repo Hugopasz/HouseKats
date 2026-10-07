@@ -1,5 +1,5 @@
 import { all, get, run } from '../db.js';
-import { macrosFor, toBase, guessEmoji, norm, CATEGORIES } from './food.js';
+import { armarioAtende, macrosFor, toBase, guessEmoji, CATEGORIES } from './food.js';
 import { targetsFor, dayIsHealthy } from './nutrition.js';
 import { isFrozen } from './travel.js';
 
@@ -98,7 +98,7 @@ const gavetaDe = (tags) => {
  * nome), então o número daqui bate com o que a tela do livro mostra.
  */
 export function receitasPossiveis(houseId) {
-  const have = pantryOf(houseId).filter((p) => p.qty > 0).map((p) => norm(p.name));
+  const armario = pantryOf(houseId).filter((p) => p.qty > 0);
 
   const receitas = all(
     `SELECT r.id, r.tags FROM house_recipe hr JOIN recipe r ON r.id = hr.recipe_id
@@ -115,12 +115,9 @@ export function receitasPossiveis(houseId) {
 
     // ingrediente opcional não impede ninguém de cozinhar
     const ing = all(
-      'SELECT name FROM recipe_ingredient WHERE recipe_id = ? AND optional = 0', rec.id
+      'SELECT name, alts FROM recipe_ingredient WHERE recipe_id = ? AND optional = 0', rec.id
     );
-    const falta = ing.some((i) => {
-      const n = norm(i.name);
-      return !have.some((h) => h.includes(n) || n.includes(h));
-    });
+    const falta = ing.some((i) => !armarioAtende(armario, i));
     if (!falta) conta[gaveta] += 1;
   }
 

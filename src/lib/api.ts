@@ -2,7 +2,7 @@
 
 export type Diet = 'pouca' | 'media' | 'grande';
 export type Goal = 'reduzir' | 'massa' | 'manter';
-export type Category = 'proteina' | 'carboidrato' | 'lipidio' | 'ultraprocessado' | 'hortifruti' | 'pet' | 'outro';
+export type Category = 'proteina' | 'carboidrato' | 'lipidio' | 'ultraprocessado' | 'hortifruti' | 'tempero' | 'pet' | 'outro';
 export type Unit = 'un' | 'g' | 'kg' | 'ml' | 'l' | 'pacote';
 
 export type Targets = {
@@ -334,7 +334,8 @@ export const resolveClaim = (id: number, action: 'confirm' | 'contest') =>
   api.post<{ ok: true }>(`/claims/${id}/resolve`, { action });
 
 // ---------------------------------------------------------------- receitas
-export type Ingredient = { name: string; qty: number; unit: Unit; category: Category; optional: number };
+// alts: substitutos aceitos para esse ingrediente nessa receita ("Carne" -> patinho, contrafile...)
+export type Ingredient = { name: string; qty: number; unit: Unit; category: Category; optional: number; alts?: string[] };
 
 export type Recipe = {
   id: number;
@@ -447,7 +448,7 @@ export const rateRecipe = (hrId: number, memberId: number, stars: number) =>
 export type CookCheck = {
   servings: number;
   ok: boolean;
-  faltando: { name: string; precisa: number; tem: number; unit: string; motivo: 'nao-tem' | 'pouco' }[];
+  faltando: { name: string; precisa: number; tem: number; unit: string; motivo: 'nao-tem' | 'pouco'; alts?: string[] }[];
 };
 
 export const checkRecipe = (hrId: number, servings: number) =>

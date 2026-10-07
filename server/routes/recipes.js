@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { all, get, run, logEvent, tx } from '../db.js';
 import { applyMove, pantryOf, recomputeStreak } from '../lib/fridge.js';
-import { convertQty, norm } from '../lib/food.js';
+import { acharNoArmario, armarioAtende, convertQty, norm, opcoesDe } from '../lib/food.js';
 import { MOEDAS, creditar } from '../lib/plaza.js';
 
 const r = Router();
@@ -16,8 +16,10 @@ const parse = (row) => ({
   steps: JSON.parse(row.steps || '[]'),
 });
 
+// alts sai do banco como JSON; o front e o matcher querem lista pronta
 const ingredientsOf = (recipeId) =>
-  all('SELECT name, qty, unit, category, optional FROM recipe_ingredient WHERE recipe_id = ? ORDER BY id', recipeId);
+  all('SELECT name, qty, unit, category, optional, alts FROM recipe_ingredient WHERE recipe_id = ? ORDER BY id', recipeId)
+    .map((i) => ({ ...i, alts: opcoesDe(i.alts) }));
 
 /** Recalcula o selo Prato Conforto: top 5 com 10+ preparos. */
 function refreshComfort(houseId) {
@@ -53,7 +55,7 @@ r.get('/houses/:id/discover', (req, res) => {
 
   const inBook = new Set(all('SELECT recipe_id FROM house_recipe WHERE house_id = ?', houseId).map((x) => x.recipe_id));
   const seen = new Set(all('SELECT recipe_id FROM recipe_swipe WHERE member_id = ?', memberId).map((x) => x.recipe_id));
-  const have = new Set(pantryOf(houseId).map((p) => norm(p.name)));
+  const armario = pantryOf(houseId);
 
   const pool = all("SELECT * FROM recipe WHERE source = 'catalog'")
     .filter((rec) => !seen.has(rec.id) && !inBook.has(rec.id));
@@ -61,10 +63,7 @@ r.get('/houses/:id/discover', (req, res) => {
   // pontua pelo que já existe na geladeira, com um empurrãozinho aleatório
   const scored = pool.map((rec) => {
     const ing = ingredientsOf(rec.id);
-    const hits = ing.filter((i) => {
-      const n = norm(i.name);
-      return [...have].some((h) => h.includes(n) || n.includes(h));
-    }).length;
+    const hits = ing.filter((i) => armarioAtende(armario, i)).length;
     return { rec, ing, score: hits / Math.max(1, ing.length) + Math.random() * 0.5 };
   }).sort((a, b) => b.score - a.score);
 
@@ -72,10 +71,7 @@ r.get('/houses/:id/discover', (req, res) => {
   const cards = scored.slice(0, remaining).map(({ rec, ing }) => ({
     ...parse(rec),
     ingredients: ing,
-    haveCount: ing.filter((i) => {
-      const n = norm(i.name);
-      return [...have].some((h) => h.includes(n) || n.includes(h));
-    }).length,
+    haveCount: ing.filter((i) => armarioAtende(armario, i)).length,
   }));
 
   res.json({ done: false, remaining, cards, swipedToday: doneToday });
@@ -115,7 +111,7 @@ r.post('/houses/:id/discover/swipe', (req, res) => {
 r.get('/houses/:id/recipes', (req, res) => {
   const houseId = Number(req.params.id);
   const meId = req.query.me ? Number(req.query.me) : null;
-  const have = new Set(pantryOf(houseId).map((p) => norm(p.name)));
+  const armario = pantryOf(houseId);
 
   const rows = all(
     `SELECT hr.id AS hr_id, hr.times_cooked, hr.comfort, hr.added_at, hr.added_by,
@@ -133,10 +129,7 @@ r.get('/houses/:id/recipes', (req, res) => {
 
   res.json(rows.map((row) => {
     const ing = ingredientsOf(row.id);
-    const missing = ing.filter((i) => {
-      const n = norm(i.name);
-      return ![...have].some((h) => h.includes(n) || n.includes(h));
-    });
+    const missing = ing.filter((i) => !armarioAtende(armario, i));
     return { ...parse(row), ingredients: ing, missing: missing.map((i) => i.name), canCook: missing.length === 0 };
   }));
 });
@@ -219,16 +212,12 @@ function conferirEstoque(houseId, recipeId, servings, baseServings) {
   for (const ing of ingredientsOf(recipeId)) {
     if (ing.optional) continue;
 
-    const n = norm(ing.name);
-    const item = pantry.find((p) => {
-      const pn = norm(p.name);
-      return pn === n || pn.includes(n) || n.includes(pn);
-    });
+    const item = acharNoArmario(pantry, ing);
 
     const precisa = Math.round(ing.qty * factor * 100) / 100;
 
     if (!item) {
-      faltando.push({ name: ing.name, precisa, tem: 0, unit: ing.unit, motivo: 'nao-tem' });
+      faltando.push({ name: ing.name, precisa, tem: 0, unit: ing.unit, motivo: 'nao-tem', alts: ing.alts });
       continue;
     }
 
@@ -244,6 +233,7 @@ function conferirEstoque(houseId, recipeId, servings, baseServings) {
         tem: Math.round(item.qty * 100) / 100,
         unit: item.unit,
         motivo: 'pouco',
+        alts: ing.alts,
       });
     }
   }
@@ -298,11 +288,7 @@ r.post('/house-recipes/:id/cook', (req, res) => {
       const factor = servings / Math.max(1, rec.servings);
       const pantry = pantryOf(hr.house_id);
       for (const ing of ingredientsOf(hr.recipe_id)) {
-        const n = norm(ing.name);
-        const item = pantry.find((p) => {
-          const pn = norm(p.name);
-          return pn === n || pn.includes(n) || n.includes(pn);
-        });
+        const item = acharNoArmario(pantry, ing);
         if (!item) continue;
         // converte para a unidade do estoque; se não der (ex: "un" x "g"), não mexe
         const wanted = convertQty(ing.qty * factor, ing.unit, item.unit);

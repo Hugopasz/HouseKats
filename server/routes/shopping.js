@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { all, get, run, logEvent, tx } from '../db.js';
-import { guessCategory, guessEmoji, norm, toBase } from '../lib/food.js';
+import { acharNoArmario, guessCategory, guessEmoji, norm, toBase } from '../lib/food.js';
 import { applyMove, pantryOf } from '../lib/fridge.js';
 import { DIETS } from '../lib/nutrition.js';
 import { SPECIES } from '../lib/fun.js';
@@ -159,7 +159,7 @@ function buildList(houseId, opts) {
     const factor = meals / Math.max(1, rec.servings);
     for (const ing of all('SELECT * FROM recipe_ingredient WHERE recipe_id = ?', rec.id)) {
       const key = `${norm(ing.name)}|${ing.unit}`;
-      const cur = needed.get(key) ?? { name: ing.name, unit: ing.unit, qty: 0, category: ing.category };
+      const cur = needed.get(key) ?? { name: ing.name, unit: ing.unit, qty: 0, category: ing.category, alts: ing.alts };
       cur.qty += ing.qty * factor;
       needed.set(key, cur);
     }
@@ -169,11 +169,7 @@ function buildList(houseId, opts) {
   const pantry = pantryOf(houseId);
   const items = [];
   for (const need of needed.values()) {
-    const stock = pantry.find((p) => {
-      const pn = norm(p.name);
-      const nn = norm(need.name);
-      return pn === nn || pn.includes(nn) || nn.includes(pn);
-    });
+    const stock = acharNoArmario(pantry, need);
 
     let missing = need.qty;
     if (stock) {

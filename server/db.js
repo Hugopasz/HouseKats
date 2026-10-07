@@ -343,6 +343,15 @@ ensureColumn('member', 'temporary', 'temporary INTEGER NOT NULL DEFAULT 0');
 ensureColumn('member', 'visit_until', 'visit_until TEXT');
 ensureColumn('member', 'coins', 'coins REAL NOT NULL DEFAULT 0');
 
+// Um ingrediente pode aceitar substitutos: a receita guarda as opcoes recomendadas
+// ("carne" = patinho, contrafile ou alcatra) em JSON, ou o nome de um grupo de lib/food.js.
+ensureColumn('recipe_ingredient', 'alts', "alts TEXT NOT NULL DEFAULT '[]'");
+
+// Impressao digital do texto da receita no catalogo. Quando o catalogo muda, o
+// semeador reconhece pela diferenca e atualiza SO as receitas do app -- receita
+// criada pela casa nunca e tocada.
+ensureColumn('recipe', 'content_hash', "content_hash TEXT NOT NULL DEFAULT ''");
+
 // fundo escolhido para a praça. Os comprados ficam em plaza_item com prefixo 'bg:'
 ensureColumn('house', 'plaza_bg', "plaza_bg TEXT NOT NULL DEFAULT 'gramado'");
 

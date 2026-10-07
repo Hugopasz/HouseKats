@@ -6,6 +6,10 @@ import {
 import { useApp } from '../lib/store';
 import { Confirm, Empty, Loading, Sheet } from '../components/ui';
 
+// "patinho, contrafilé ou alcatra" — vírgula até o penúltimo, "ou" no último
+const listar = (nomes: string[]) =>
+  nomes.length < 2 ? (nomes[0] ?? '') : `${nomes.slice(0, -1).join(', ')} ou ${nomes[nomes.length - 1]}`;
+
 /** Estrelinhas clicáveis. A nota entra no peso da lista de compras. */
 function Stars({ value, onPick, size = 'md' }: { value: number; onPick?: (n: number) => void; size?: 'sm' | 'md' }) {
   return (
@@ -297,13 +301,19 @@ function RecipeSheet({
                   </span>
                 </div>
                 {falta.faltando.map((f) => (
-                  <div key={f.name} className="row tiny" style={{ gap: 6 }}>
-                    <span className="grow truncate">{f.name}</span>
-                    <span className="muted">
-                      {f.motivo === 'nao-tem'
-                        ? `precisa ${f.precisa} ${f.unit}, não tem`
-                        : `precisa ${f.precisa} ${f.unit}, tem ${f.tem}`}
-                    </span>
+                  <div key={f.name} className="stack" style={{ gap: 1 }}>
+                    <div className="row tiny" style={{ gap: 6 }}>
+                      <span className="grow truncate">{f.name}</span>
+                      <span className="muted">
+                        {f.motivo === 'nao-tem'
+                          ? `precisa ${f.precisa} ${f.unit}, não tem`
+                          : `precisa ${f.precisa} ${f.unit}, tem ${f.tem}`}
+                      </span>
+                    </div>
+                    {/* os substitutos vão na linha de baixo: na de cima eles espremem o nome */}
+                    {f.alts && f.alts.length > 0 && (
+                      <div className="tiny muted">pode ser {listar(f.alts)}</div>
+                    )}
                   </div>
                 ))}
                 <div className="tiny muted">
@@ -328,10 +338,17 @@ function RecipeSheet({
                 ? Math.round((ing.qty * naMesa) / Math.max(1, recipe.servings) * 100) / 100
                 : ing.qty;
               return (
-                <div key={ing.name} className="row small">
-                  <span style={{ width: 16 }}>{curto ? '⚠️' : '✓'}</span>
-                  <span className={`grow ${curto ? 'muted' : ''}`}>{ing.name}</span>
-                  <span className="tiny muted">{qtd} {ing.unit}</span>
+                <div key={ing.name} className="stack" style={{ gap: 1 }}>
+                  <div className="row small">
+                    <span style={{ width: 16 }}>{curto ? '⚠️' : '✓'}</span>
+                    <span className={`grow ${curto ? 'muted' : ''}`}>{ing.name}</span>
+                    <span className="tiny muted">{qtd} {ing.unit}</span>
+                  </div>
+                  {ing.alts && ing.alts.length > 0 && (
+                    <div className="tiny muted" style={{ paddingLeft: 16 }}>
+                      serve também: {listar(ing.alts)}
+                    </div>
+                  )}
                 </div>
               );
             })}
