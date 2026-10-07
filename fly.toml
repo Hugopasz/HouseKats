@@ -1,0 +1,38 @@
+# Como o House Kats roda no Fly.io.
+
+# Troque se este nome já estiver em uso: ele é único no mundo todo.
+app = "house-kats-hugo"
+
+# São Paulo. O app faz várias chamadas por tela, e servir dos Estados Unidos
+# somaria uns 130ms em cada uma — dá para sentir no celular.
+primary_region = "gru"
+
+[env]
+  PORT = "3777"
+  # O banco NÃO mora na imagem: a imagem é trocada inteira a cada deploy.
+  # Mora no volume montado em /data, logo abaixo.
+  HOUSEKATS_DATA = "/data"
+
+[http_service]
+  internal_port = 3777
+  force_https = true
+
+  # A máquina dorme quando ninguém está usando e acorda na primeira visita,
+  # em uns 2 segundos. Para uma casa de duas pessoas isso é a diferença entre
+  # pagar o mês cheio e pagar só as horas de uso.
+  #
+  # Dormir é seguro aqui porque o banco roda com synchronous = FULL e sem WAL:
+  # toda escrita confirmada já está no disco antes de a tela responder.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+# O volume é o que faz o app lembrar das coisas. Sem ele, cada deploy
+# recomeçaria de uma casa vazia.
+[[mounts]]
+  source = "housekats_dados"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

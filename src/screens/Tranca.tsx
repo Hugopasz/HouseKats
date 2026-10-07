@@ -70,7 +70,7 @@ export default function Tranca({ onEntrou }: { onEntrou: () => void }) {
       </div>
 
       <div className="tiny muted center" style={{ textAlign: 'center' }}>
-        Esqueceu? A senha fica num arquivo ao lado do banco, no PC que roda o app.
+        Esqueceu? Quem cuida do servidor da casa consegue trocar.
       </div>
     </div>
   );

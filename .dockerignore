@@ -1,0 +1,14 @@
+# O que NÃO sobe para a imagem.
+node_modules
+dist
+.git
+.claude
+
+# Banco nunca entra na imagem: ele mora no volume, que sobrevive aos deploys.
+data
+data.backup-onedrive
+*.db
+*.db-*
+senha.txt
+
+Iniciar House Kats.bat

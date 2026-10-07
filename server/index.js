@@ -5,7 +5,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { pruneDrafts } from './db.js';
-import { criarSessao, porteiro, senhaConfere, senhaArquivo, senhaOrigem, senhaParaMostrar } from './lib/senha.js';
+import {
+  criarSessao, porteiro, senhaConfere, senhaArquivo, senhaOrigem, senhaParaMostrar,
+  esperaDaTranca, anotarFalha, zerarFalhas,
+} from './lib/senha.js';
 import { seedRecipes } from './seed/recipes.js';
 import metaRoutes from './routes/meta.js';
 import houseRoutes from './routes/house.js';
@@ -40,11 +43,31 @@ app.use('/api', (req, _res, next) => {
 // ---------------------------------------------------------------- tranca
 // Todo o /api passa pelo porteiro. Só /ping e /entrar respondem sem crachá.
 app.post('/api/entrar', (req, res) => {
-  if (!senhaConfere(req.body?.senha)) {
-    return res.status(401).json({
-      error: String(req.body?.senha ?? '').trim() ? 'Senha incorreta' : 'Digite a senha da casa',
+  // o limite vem antes de olhar a senha: sem ele dá para chutar a noite toda,
+  // e o endereço do app é público.
+  const espera = esperaDaTranca(req);
+  if (espera !== null) {
+    return res.status(429).json({
+      error: `Muitas tentativas. Espere ${espera} min e tente de novo.`,
+      precisaSenha: true,
     });
   }
+
+  if (!senhaConfere(req.body?.senha)) {
+    const restam = anotarFalha(req);
+    // só avisa quando está acabando: contar em voz alta no primeiro erro de
+    // digitação assusta quem mora aqui sem atrapalhar quem está chutando.
+    const aviso = restam > 0 && restam <= 2
+      ? ` Resta${restam === 1 ? '' : 'm'} ${restam} tentativa${restam === 1 ? '' : 's'}.`
+      : '';
+    return res.status(401).json({
+      error: (String(req.body?.senha ?? '').trim() ? 'Senha incorreta' : 'Digite a senha da casa') + aviso,
+      restam,
+      precisaSenha: true,
+    });
+  }
+
+  zerarFalhas(req);
   res.json({ ok: true, token: criarSessao(req.get('user-agent') ?? '') });
 });
 
@@ -92,7 +115,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`  ├─ local     http://localhost:${PORT}`);
   for (const ip of localIPs()) console.log(`  ├─ na Wi-Fi  http://${ip}:${PORT}`);
   if (descartados) console.log(`  ├─ limpeza   ${descartados} casa(s) abandonada(s) no cadastro`);
-  console.log(`  ├─ receitas  ${seeded.total} no catálogo${seeded.added ? ` (+${seeded.added} novas)` : ''}`);
+  const mudou = [seeded.added ? `+${seeded.added} novas` : null, seeded.updated ? `${seeded.updated} atualizadas` : null].filter(Boolean).join(', ');
+  console.log(`  ├─ receitas  ${seeded.total} no catálogo${mudou ? ` (${mudou})` : ''}`);
   console.log(`  ├─ senha     ${senhaOrigem === 'HOUSEKATS_SENHA' ? 'da variável de ambiente' : senhaArquivo}`);
   console.log(`  └─ ${served ? 'servindo o app buildado' : 'só API (rode "npm run dev" para o front)'}`);
 
